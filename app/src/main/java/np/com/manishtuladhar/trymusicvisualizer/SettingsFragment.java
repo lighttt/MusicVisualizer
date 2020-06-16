@@ -2,6 +2,7 @@ package np.com.manishtuladhar.trymusicvisualizer;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import androidx.preference.CheckBoxPreference;
 import androidx.preference.ListPreference;
@@ -10,7 +11,7 @@ import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceScreen;
 
 public class SettingsFragment extends PreferenceFragmentCompat implements
-        SharedPreferences.OnSharedPreferenceChangeListener {
+        SharedPreferences.OnSharedPreferenceChangeListener, Preference.OnPreferenceChangeListener {
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
@@ -30,6 +31,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                 setPreferenceSummary(p, value);
             }
         }
+        Preference preference = findPreference(getString(R.string.pref_size_key));
+        preference.setOnPreferenceChangeListener(this);
     }
 
     private void setPreferenceSummary(Preference preference, String value) {
@@ -70,4 +73,32 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
             }
         }
     }
+
+    @Override
+    public boolean onPreferenceChange(Preference preference, Object newValue) {
+        // In this context, we're using the onPreferenceChange listener for checking whether the
+        // size setting was set to a valid value.
+
+        Toast error = Toast.makeText(getContext(), "Please select a number between 0.1 and 3", Toast.LENGTH_SHORT);
+
+        // Double check that the preference is the size preference
+        String sizeKey = getString(R.string.pref_size_key);
+        if (preference.getKey().equals(sizeKey)) {
+            String stringSize = (String) newValue;
+            try {
+                float size = Float.parseFloat(stringSize);
+                // If the number is outside of the acceptable range, show an error.
+                if (size > 3 || size <= 0) {
+                    error.show();
+                    return false;
+                }
+            } catch (NumberFormatException nfe) {
+                // If whatever the user entered can't be parsed to a number, show an error
+                error.show();
+                return false;
+            }
+        }
+        return true;
+    }
+
 }
