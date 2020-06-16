@@ -19,7 +19,7 @@ import android.widget.Toast;
 import np.com.manishtuladhar.trymusicvisualizer.AudioVisuals.AudioInputReader;
 import np.com.manishtuladhar.trymusicvisualizer.AudioVisuals.VisualizerView;
 
-public class VisualizerActivity extends AppCompatActivity {
+public class VisualizerActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final int MY_PERMISSION_RECORD_AUDIO_REQUEST_CODE = 88;
     private VisualizerView mVisualizerView;
@@ -34,20 +34,40 @@ public class VisualizerActivity extends AppCompatActivity {
         setupPermissions();
     }
 
+    // ======================= SHARED PREFERENCES ===================================
+
     private void setupSharedPreferences() {
+        //getting the shared preferences instance
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        mVisualizerView.setShowBass(sharedPreferences.getBoolean(getString(R.string.pref_show_bass_key),true));
+        //setting from shared preferences
+        mVisualizerView.setShowBass(sharedPreferences.getBoolean(getString(R.string.pref_show_bass_key), true));
         mVisualizerView.setShowMid(true);
         mVisualizerView.setShowTreble(true);
         mVisualizerView.setMinSizeScale(1);
-        mVisualizerView.setColor(getString(R.string.pref_color_red_value));
+        mVisualizerView.setColor(getString(R.string.pref_color_green_value));
+        //register the listener
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
     }
 
+    //if a shared preference change
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (key.equals(getString(R.string.pref_show_bass_key))) {
+            mVisualizerView.setShowBass(sharedPreferences.getBoolean(key, getResources().getBoolean(R.bool.pref_show_bass_default)));
+        }
+    }
 
+    /*
+     *  ======================= Activity Lifecycle ==========================================
+     */
 
-    /**
-     * onPause Cleanup audio stream
-     **/
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        //unregister listener to avoid memory leaks
+        PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(this);
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -63,42 +83,18 @@ public class VisualizerActivity extends AppCompatActivity {
             mAudioInputReader.restart();
         }
     }
-    /**
-     * Methods for setting up the menu
-     **/
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        /* Use AppCompatActivity's method getMenuInflater to get a handle on the menu inflater */
-        MenuInflater inflater = getMenuInflater();
-        /* Use the inflater's inflate method to inflate our visualizer_menu layout to this menu */
-        inflater.inflate(R.menu.visualizer_menu, menu);
-        /* Return true so that the visualizer_menu is displayed in the Toolbar */
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            Intent startSettingsActivity = new Intent(this, SettingsActivity.class);
-            startActivity(startSettingsActivity);
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
 
 
-
-    /**
-     * App Permissions for Audio
-     **/
+    /*
+     *  ======================= App Permissions for Audio ==========================================
+     */
     private void setupPermissions() {
         // If we don't have the record audio permission...
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             // And if we're on SDK M or later...
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 // Ask again, nicely, for the permissions.
-                String[] permissionsWeNeed = new String[]{ Manifest.permission.RECORD_AUDIO };
+                String[] permissionsWeNeed = new String[]{Manifest.permission.RECORD_AUDIO};
                 requestPermissions(permissionsWeNeed, MY_PERMISSION_RECORD_AUDIO_REQUEST_CODE);
             }
         } else {
@@ -128,5 +124,26 @@ public class VisualizerActivity extends AppCompatActivity {
             // Other permissions could go down here
 
         }
+    }
+
+    /*
+     *  ======================= MENU ==========================================
+     */
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.visualizer_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_settings) {
+            Intent intent = new Intent(this, SettingsActivity.class);
+            startActivity(intent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
